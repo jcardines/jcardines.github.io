@@ -5,6 +5,7 @@ output: # rmarkdown::github_document
   pdf_document: default
   word_document: default
 title: "Assignment 2.  Operations on Numeric Vectors"
+name: "Jake Cardines"
 ---
 
 ***Note*:** *This problems make uses of the element-to-element property of operations on numeric vectors to calculate pattern summation.* 
