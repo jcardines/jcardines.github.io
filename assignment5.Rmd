@@ -6,7 +6,7 @@ output: # rmarkdown::github_document
     toc: true
   pdf_document: default
   word_document: default
-title: "Assignment 5: Handle Missing Values"
+title: "Assignment 5: Handle Missing Values - Jake Cardines"
 ---
 
 ***How to do it?***: 
