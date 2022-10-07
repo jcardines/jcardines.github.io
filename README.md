@@ -12,3 +12,5 @@
 
 [Click here to my Assignment 6](assignment6.html)
 
+[Plot from Assignment 7)](plot1.png)
+
