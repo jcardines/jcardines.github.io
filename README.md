@@ -14,3 +14,4 @@
 
 [Plot from Assignment 7](plot1.png)
 
+[Click here to my Assignment 7](assignment7.html)
