@@ -151,10 +151,26 @@ df %>%
 Do the follows. 
 
   - Use `geom_point` to compare the vaccines used by date in Argentina in 2022. 
+```{r}
+df %>% 
+  filter(location=="Argentina", date >'2021-12-31')%>% 
+  ggplot()+
+  geom_point(mapping = aes(x=date, y=total_vaccinations, color = vaccine))
+  
+  
+```
+  
   
   - Change `geom_point` to `geom_line` in the above codes to have the corresponding line plots. 
+```{r}
+df %>% 
+  filter(location=="Argentina", date >'2021-12-31')%>% 
+  ggplot()+
+  geom_line(mapping = aes(x=date, y=total_vaccinations, color = vaccine))
+```
+  
 
-11. (Using the same dataset as in 10.) Sometime we need to do some calculations on the data before plotting. For example, the below codes is to compare the total vaccines (including all types of vaccines) by date between the US and the EU
+11. (Using the same dataset as in 10.) Sometimes we need to do some calculations on the data before plotting. For example, the below codes is to compare the total vaccines (including all types of vaccines) by date between the US and the EU
 
 ```{r}
 # the total vaccines (including all types of vaccines) by date
@@ -188,6 +204,24 @@ df %>%
 Do the follows. 
 
 - Use `geom_point` compare the total vaccines (including all types of vaccines) by date between countries/regions in Asia
+```{r}
+df %>% 
+  filter(location %in% c('Cyprus', 'Japan', 'Nepal', 'South Korea')) %>% 
+  group_by(date, location) %>% 
+  summarise(totalvaccines =sum(total_vaccinations, na.rm = TRUE)) %>% 
+  ggplot()+
+  geom_point(mapping=aes(x=date, y=totalvaccines, color = location))
+```
+
 
 - Use `geom_point` compare the total vaccines (including all types of vaccines) by date between countries/regions in South America in 2021
+```{r}
+df %>% 
+  filter(date>='2021-01-01', date < '2022-01-01', location %in% c('Chile', 'Ecuador')) %>% 
+  group_by(date, location) %>% 
+  summarise(totalvaccines =sum(total_vaccinations, na.rm = TRUE)) %>% 
+  ggplot()+
+  geom_point(mapping=aes(x=date, y=totalvaccines, color = location))
+```
+
 
