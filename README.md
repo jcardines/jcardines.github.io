@@ -15,3 +15,5 @@
 [Plot from Assignment 7](plot1.png)
 
 [Assignment 7](assignment7.html)
+
+[Click hee to my Assignment 8](assignment8.html)
