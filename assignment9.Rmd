@@ -82,5 +82,15 @@ df %>%
 Use `transition_reveal` to plot the total vaccinations per hundred by level of income. Hint: the levels of income are identified in the `location` variable. Put a short comment on the caption of the plot. 
 ```{r}
 df <- read_csv('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv')
-  
+df %>% 
+  filter(location %in% c('High income', 'Low income', 'Lower middle income', 'Upper middle income')) %>%
+  ggplot(aes(y=total_vaccinations_per_hundred,
+            x=date,
+            color=location))+ 
+  geom_line()+
+  geom_point(size=3)+
+  geom_text(aes(label = total_vaccinations_per_hundred), 
+            hjust = -.1, size=5) +
+  transition_reveal(date)
+
 ```
