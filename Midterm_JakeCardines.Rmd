@@ -1,0 +1,942 @@
+
+---
+output:
+  html_document:
+    theme: united
+title: "Math 421 - Midterm"
+---
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# {.tabset}
+
+## Instruction
+
+The midterm has two components: the Rmarkdown notebook (html) and the presentation.  We will do the presentation in class. Post both the notebook and the presentation on your Github page. 
+
+**The notebook:** The notebook should be created using `rmarkdown` (like other assignments). The notebook should have a title. It should have a table of content (TOC form) or in a tab form. The Rmd files of Tab and Toc form are available on the class webpage. 
+
+**The Presentation:** Present your results in 5-10 minutes. To make the presentation using Rmarkdown, do the follows: 
+
+    - In Rstudio -> File -> New File -> R markdown
+    
+    - In the left panel, click to Presentation -> Click OK
+    
+    - Now you have an Rmarkdown that can be knitted to be a html presentation 
+    
+- You can also use Rmd samples of the class slides that are available on the class webpage. 
+    
+- You do not need to rerun all the codes for the presentation. For example, to show the model comparison, you just need to show the image of the model comparison instead of running all the models again.
+    
+- To inset an image in a slide, use  `![](image.png)`
+
+- To scale images, you can follow these below instructions. 
+    
+    - https://bookdown.org/yihui/rmarkdown-cookbook/figure-size.html
+    
+    - http://zevross.com/blog/2017/06/19/tips-and-tricks-for-working-with-images-and-figures-in-r-markdown-documents/
+
+- To turn off message and warning of a code cell, use:  `{r, message=FALSE, warning=FALSE}` for the cell. 
+
+**What to present**:
+
+  - Present Part 2 - Visualization
+  
+  - Present Question Question 4, 5 and 6 in Part 3.  
+  
+  - Present any errors/challenges you run into and how you fix/overcome them. 
+
+**Data:**  
+
+The data for the mid-term project is the Rhode Island Department of Health Hospital Discharge Data.  Each row of the data presents a patient. 
+
+Link: https://drive.google.com/open?id=15QNBf6YYKocK2nNIfpKDer58kQnCPNZJ 
+
+-------
+
+## I. Data Wranggling
+
+1. Download the data file `hdd0318cy.sas7bdat`.
+
+2. Use `read_sas` in library `haven` to read the data. 
+```{r}
+library(haven)
+setwd("C:/Users/student/Documents/Stat Analysis with R/MATH421")
+df <- read_sas('hdd0318cy.sas7bdat')
+```
+    
+3. Filter the data to have only patients of the year 2018 (`yod=2018`)
+```{r}
+library(tidyverse)
+df <- df %>%   filter(yod == 18)
+```
+
+    
+4. Select to work with only following variables: 
+
+```{r, eval=FALSE}
+                      "yod", "payfix","pay_ub92","age",  
+                      "sex","raceethn","provider","moa", 
+                      "yoa","mod","admtype", "asource" , 
+                      "preopday" ,"los", "service" , "icu","ccu",    
+                      "dispub92", "payer"  ,"drg","trandb", 
+                      "randbg","randbs","orr", "anes","seq",   
+                      "lab","dtest", "ther","blood","phar", 
+                      "other","patcon","bwght","total","tot" ,  
+                      "ecodub92","b_wt","pt_state","diag_adm","ancilar" ,
+                      "campus","er_fee","er_chrg","er_mode","obs_chrg",
+                      "obs_hour","psycchrg","nicu_day"
+```
+
+
+```{r}
+df <- df %>%  select("yod", "payfix","pay_ub92","age",  
+                      "sex","raceethn","provider","moa", 
+                      "yoa","mod","admtype", "asource" , 
+                      "preopday" ,"los", "service" , "icu","ccu",    
+                      "dispub92", "payer"  ,"drg","trandb", 
+                      "randbg","randbs","orr", "anes","seq",   
+                      "lab","dtest", "ther","blood","phar", 
+                      "other","patcon","bwght","total","tot" ,  
+                      "ecodub92","b_wt","pt_state","diag_adm","ancilar" ,
+                      "campus","er_fee","er_chrg","er_mode","obs_chrg",
+                      "obs_hour","psycchrg","nicu_day")
+```
+ 
+*Notice*:  You may want to save the current data to your computer for easy access later.  To save the data file use `write_csv(df, 'midterm.csv')`, for example.  
+```{r}
+write_csv(df, 'midterm.jakecardines.csv')
+```
+
+
+5. What are variables that have missing values?
+```{r}
+df <- read_csv('midterm.jakecardines.csv')
+colSums(is.na(df))
+```
+
+6. Remove all variables with missing values. 
+```{r}
+df %>% select(-payfix, -raceethn, -admtype, -asource, -preopday, -bwght, -ecodub92, -pt_state, -diag_adm, -er_mode,  -obs_hour, -nicu_day, )
+```
+
+7. Refer to the data description in the file `HDD2015-18cy6-20-19.docx`, which variable recording the month of admission?, which variable recording the month of discharge?
+```{r}
+'MOA is month of admission. MOD is month of discharge.'
+```
+
+8. Which month admitted the most number of patients? Which month admitted the most number of male patients?
+```{r}
+df %>% 
+  count(moa) %>% 
+  arrange(-n)
+'October admitted the most patients'
+```
+```{r}
+df %>% filter(sex == 1) %>% 
+count(moa) %>% 
+  arrange(-n)
+'October had the most male patients admitted'
+```
+
+
+9. Which month has the most number of teenage female patients?
+```{r}
+df %>%  filter(sex==2, age >= 13, age <=18) %>% 
+  count(moa) %>% 
+  arrange(-n)
+'March had the most teenage female patients'
+```
+
+
+10. Which provider has the most number of female patients in October? 
+```{r}
+df %>% filter(sex==2, moa ==10) %>% 
+  count(provider) %>% 
+  arrange(-n)
+'Provider 7205 has the most female patients in October'
+```
+
+11. Are female patients older than male patients, on average? 
+```{r}
+  df %>% 
+  filter(sex ==1 | sex==2) %>% 
+  group_by(sex) %>% 
+  summarise(mean_age = mean(age)) 
+  
+```
+
+12. Calculate the average age of patients by months. Which month has the oldest patients on average age?
+```{r}
+df %>% 
+  group_by(moa) %>% 
+  summarise(mean_age = mean(age)) %>% 
+arrange(-mean_age)
+```
+
+
+13. What is the name of the provider that has the highest total charge?
+```{r}
+df %>% 
+group_by(provider) %>% 
+summarise(sumtot = sum(tot)) %>% 
+arrange(-sumtot)
+'Provider 7205, which is Rhode Island Hospital, has highest total charge'
+ 
+```
+
+14. What is the name of the provider that has the least total charge for teenage male on average?
+```{r}
+df %>%  filter(sex==1, age >= 13, age <=18) %>%
+  group_by(provider) %>% 
+  summarise(sumtot = sum(tot)) %>% 
+  arrange(sumtot)
+'Provider 7206, which is Roger Williams, has the lowest total charge for teenage males.'
+
+```
+
+15. Create a season (Spring, Summer, Fall, Winter) variable. Calculate the length of stays by season.  Which season has the longest length of stays on average?
+```{r}
+df$season <- case_when(df$moa %in% c(12,1,2) ~ 'Winter',
+  df$moa %in% c(3,4,5)~ 'Spring', df$moa %in% c(6,7,8)~ 'Summer', df$moa %in% c(9,10,11)~'Fall')
+
+df %>% 
+group_by(season) %>% 
+summarise(meanlos = mean(los)) %>% 
+arrange(-meanlos)
+'On average, summer has the longest stays with an average of 4.9582 days.'
+
+```
+
+16. On average, how much a 20 year-old male get charged for staying 1 day in the Fall season?
+```{r}
+df %>% 
+  filter(age==20, sex==1, season =="Fall", los ==1) %>% 
+summarise(meantot = mean(tot))
+```
+
+
+17. Write a paragraph to summarize the section and give your comments on the results. You could do some other calculations to support your points. 
+```{r}
+df %>% 
+  filter(age==20, sex==2, season =="Fall", los ==1) %>% 
+summarise(meantot = mean(tot))
+df %>% 
+  filter(age==20, sex==1, season =="Spring", los ==1) %>% 
+summarise(meantot = mean(tot))
+df %>% 
+  filter(age==20, sex==2, season =="Spring", los ==1) %>% 
+summarise(meantot = mean(tot))
+
+df %>% 
+  filter(age==51, sex==1, season =="Fall", los ==1) %>% 
+summarise(meantot = mean(tot))
+df %>% 
+  filter(age==51, sex==2, season =="Fall", los ==1) %>% 
+summarise(meantot = mean(tot))
+
+df %>% 
+  filter(age==51, sex==1, season =="Spring", los ==1) %>% 
+summarise(meantot = mean(tot))
+
+df %>% 
+  filter(age==51, sex==2, season =="Spring", los ==1) %>% 
+summarise(meantot = mean(tot))
+```
+```{r}
+'Overall, the average age of patients are very similar between men and women, with men being 51.5 years old on average and women being about 50.86 years old.This age range is also very consistent among each month of data, with January having the oldest patients with a mean age of 51.8 years and October having the youngest, though the average is still a very close 50.8 years. In terms of providers, Rhode Island Hospital (7205) seems to be the most popular or most expensive, as its total charges exceed the provider with the second highest charges (7204) by over $1 billion. Rhode Island Hospital also had the most female patients in October, as well as the highest total charges for teenage males, which further proves this point. It is interesting to see that for 1-day visits in the fall, a 20-year old woman has a much cheaper total of $9676 than a male of the same age having $16511. However, women who stay 1-day in the Spring face higher costs on average of $14,000 than men with $11,000. When looking at men and women who are about the average age (51), women seem to have costlier stays whether it is the fall or spring. Their costs for a single day are also nearly double that of the 20 year olds.'
+```
+
+-------
+
+## II. Data Visualization
+
+Continue with the data from part I. 
+
+1. Provides at least 10 meaningful plots. Comments on the plots. All plots should have title, caption, appropriate labels on x and y-axis
+```{r}
+library(knitr)
+library(ggplot2)
+
+df$admittype <- case_when(df$admtype %in% c(1) ~ 'Emergency',
+  df$admtype %in% c(2)~ 'Urgent')
+
+df %>% filter(admittype == 'Emergency' | admittype =='Urgent') %>% ggplot()+ 
+  geom_point(mapping=aes(x=age, y=los))+
+  facet_wrap(~admittype) +labs(x='Age of Patient', 
+       y = 'Length of Stay', 
+       title = 'Length of Stay by Age & Admission Type', 
+       caption = 'Very similar but younger patients admitted as urgent do have some more longer duration stays')
+
+gg1 <- df %>% filter(admittype == 'Emergency' | admittype =='Urgent') %>% ggplot()+ 
+  geom_point(mapping=aes(x=age, y=los))+
+  facet_wrap(~admittype) +labs(x='Age of Patient', 
+       y = 'Length of Stay', 
+       title = 'Length of Stay by Age & Admission Type', 
+       caption = 'Very similar but younger patients admitted as urgent do have some more longer duration stays')
+
+ggsave(filename = 'midtermplot1.png', plot = gg1)
+```
+
+
+
+
+```{r}
+df$Sex <- case_when(df$sex %in% c(1) ~ 'male',
+  df$sex %in% c(2)~ 'female')
+
+df$Raceethn <- case_when(df$raceethn %in% c(1) ~ 'White',
+  df$raceethn %in% c(2)~ 'Black', df$raceethn %in% c(3) ~ 'Asian', df$raceethn %in% c(4) ~ 'American Indian',df$raceethn %in% c(5) ~ 'Native Hawaiian',df$raceethn %in% c(6) ~ 'Other',df$raceethn %in% c(7) ~ 'Hispanic',df$raceethn %in% c(9) ~ 'Unknown')
+
+
+df %>% 
+ggplot(aes(x = provider,
+                  fill=Raceethn))+
+  geom_bar(position = 'fill') +labs(x='Provider', 
+       y = 'Proportion of Patients', 
+       title = 'Demographics by Provider', 
+       caption = 'Patients among all providers are predominately white, but Women&Infants and Bradley have the most diverse patient group')
+
+gg2 <- df %>% 
+ggplot(aes(x = provider,
+                  fill=Raceethn))+
+  geom_bar(position = 'fill') +labs(x='Provider', 
+       y = 'Proportion of Patients', 
+       title = 'Demographics by Provider', 
+       caption = 'Patients among all providers are predominately white, but Women&Infants and Bradley have the most diverse patient group')
+
+ggsave(filename = 'midtermplot2.png', plot = gg2)
+
+```
+```{r}
+df %>% 
+  filter(Sex=='male'|Sex=='female', b_wt > 0) %>% 
+  
+  ggplot()+ 
+  geom_point(mapping=aes(x=b_wt, y=nicu_day))+facet_wrap(~Sex)+labs(x='Birth Weight', 
+       y='Days in Nicu', 
+       title = 'Birth Weight VS Days in Nicu', 
+       caption = 'Lower birth weights seem to correspond with more days spent in the nicu')
+
+gg3 <- df %>% 
+  filter(Sex=='male'|Sex=='female', b_wt > 0) %>% 
+  
+  ggplot()+ 
+  geom_point(mapping=aes(x=b_wt, y=nicu_day))+facet_wrap(~Sex)+labs(x='Birth Weight', 
+       y='Days in Nicu', 
+       title = 'Birth Weight VS Days in Nicu', 
+       caption = 'Lower birth weights seem to correspond with more days spent in the nicu')
+
+ggsave(filename = 'midtermplot3.png', plot = gg3)
+```
+
+```{r}
+df$paytype <- case_when(df$pay_ub92 %in% c(1,2) ~ 'Medicare',
+  df$pay_ub92 %in% c(3,5)~ 'Medicaid', df$pay_ub92 %in% c(4) ~ 'Rite Care', df$pay_ub92 %in% c(6) ~ 'Blue Cross',df$pay_ub92 %in% c(7) ~ 'Blue Chip',df$pay_ub92 %in% c(9) ~ 'Other Insurance',df$pay_ub92 %in% c(8) ~ 'United Health',df$pay_ub92 %in% c(10) ~ 'Champus', df$pay_ub92 %in% c(11) ~ 'Workers Comp',df$pay_ub92 %in% c(12) ~ 'Other',df$pay_ub92 %in% c(13) ~ 'Self Pay')
+
+df %>% 
+    filter(age>21, age<65, pay_ub92 <= 13, sex <=2) %>% 
+    ggplot()+
+    geom_bar(mapping=aes(x=Sex, fill=paytype)) +labs(x='Sex', 
+       y='Number of Patients', 
+       title = 'Payment Types by Sex', 
+       caption = 'More working age females using Rite Care & Blue Cross. More working age males using Medicare/Medicaid')
+
+gg4 <- df %>% 
+    filter(age>21, age<65, pay_ub92 <= 13, sex <=2) %>% 
+    ggplot()+
+    geom_bar(mapping=aes(x=Sex, fill=paytype)) +labs(x='Sex', 
+       y='Number of Patients', 
+       title = 'Payment Types by Sex', 
+       caption = 'More working age females using Rite Care & Blue Cross. More working age males using Medicare/Medicaid')
+
+ggsave(filename = 'midtermplot4.png', plot = gg4)
+  
+```
+```{r}
+df$Source <- case_when(df$asource %in% c(1) ~ 'Physician',
+  df$asource %in% c(2)~ 'Clinic', df$asource %in% c(3) ~ 'HMO', df$asource %in% c(4) ~ 'Hospital',
+  df$asource %in% c(5)~ 'Nurse Fac.', df$asource %in% c(6) ~ 'Healthcare',df$asource %in% c(7) ~ 'ER',
+  df$asource %in% c(8)~ 'Law Enf.', df$asource %in% c(9) ~ 'Unknown')
+
+df %>% group_by(Source) %>% 
+  summarise(avg_stay = mean(los)) %>% 
+  ggplot()+ 
+  geom_col(mapping=aes(x=Source, y=avg_stay))+labs(x='Patient Source', 
+       y='Average Length of Stay', 
+       title = 'Patient Stay Durations by Source of Referral', 
+       caption = 'Patients coming from other hospitals have the longest average stay times and patients coming from clinics have the shortest.')
+
+gg5 <- df %>% group_by(Source) %>% 
+  summarise(avg_stay = mean(los)) %>% 
+  ggplot()+ 
+  geom_col(mapping=aes(x=Source, y=avg_stay))+labs(x='Patient Source', 
+       y='Average Length of Stay', 
+       title = 'Patient Stay Durations by Source of Referral', 
+       caption = 'Patients coming from other hospitals have the longest average stay times and patients coming from clinics have the shortest.')
+
+ggsave(filename = 'midtermplot5.png', plot = gg5)
+
+```
+```{r}
+df %>% 
+  filter(sex <=2, age >=13, age <=18) %>% 
+  group_by(season) %>% 
+  summarise(avg_tot= mean(tot)) %>% 
+  ggplot()+ 
+  geom_col(mapping=aes(x=season, y=avg_tot))+labs(x='Season', 
+       y='Average Cost', 
+       title = 'Cost of Stay by Season Among Teens', 
+       caption = 'Teenagers tend to have much more costly stays during the summer, on average.')
+
+gg6 <- df %>% 
+  filter(sex <=2, age >=13, age <=18) %>% 
+  group_by(season) %>% 
+  summarise(avg_tot= mean(tot)) %>% 
+  ggplot()+ 
+  geom_col(mapping=aes(x=season, y=avg_tot))+labs(x='Season', 
+       y='Average Cost', 
+       title = 'Cost of Stay by Season Among Teens', 
+       caption = 'Teenagers tend to have much more costly stays during the summer, on average.')
+
+ggsave(filename = 'midtermplot6.png', plot = gg6)
+```
+```{r}
+df$agegroup <- case_when(df$age <=13 ~ 'children', df$age <=18 ~ 'teens', df$age <=35 ~ 'young adult', df$age <=60 ~ 'middle aged',df$age <=75 ~ 'retirement', TRUE ~ 'elderly')
+
+ df %>% 
+  group_by(agegroup) %>% 
+  summarise(avg_los = mean(los)) %>% 
+  ggplot()+
+  geom_col(aes(x=agegroup, y=avg_los, position = 'fill')) +labs(x='Age Group', 
+       y='Mean Duration of Stay', 
+       title = 'Mean Duration of Stay by Age Group', 
+       caption = 'On average, most age groups spend the same amount of time being admitted but teens stay an extra few days')
+ 
+ gg7 <- df %>% 
+  group_by(agegroup) %>% 
+  summarise(avg_los = mean(los)) %>% 
+  ggplot()+
+  geom_col(aes(x=agegroup, y=avg_los, position = 'fill')) +labs(x='Age Group', 
+       y='Mean Duration of Stay', 
+       title = 'Mean Duration of Stay by Age Group', 
+       caption = 'On average, most age groups spend the same amount of time being admitted but teens stay an extra few days')
+ 
+ ggsave(filename = 'midtermplot7.png', plot = gg7)
+```
+```{r}
+df$admittype <- case_when(df$admtype %in% c(1) ~ 'Emergency',
+  df$admtype %in% c(2)~ 'Urgent', df$admtype %in% c(3) ~ 'Electric',
+  df$admtype %in% c(4)~ 'Newborn', df$admtype %in% c(5) ~ 'Trauma',
+  df$admtype %in% c(9)~ 'Unknown')
+
+
+df %>% filter(age >=20, age <=29) %>%
+  ggplot()+ 
+  geom_bar(mapping=aes(x=yoa, fill=admittype), 
+           position = 'fill') +labs(x='Year of Admission', 
+       y='Proportion of Patients', 
+       title = 'Admission Types by Year for Patients in their 20s', 
+       caption = 'In 2016, people in their 20s were all admitted as urgent, but less than half were urgent in 2017 and 2018. Also an increasing amount labeled as Electric each year')
+
+gg8 <- df %>% filter(age >=20, age <=29) %>%
+  ggplot()+ 
+  geom_bar(mapping=aes(x=yoa, fill=admittype), 
+           position = 'fill') +labs(x='Year of Admission', 
+       y='Proportion of Patients', 
+       title = 'Admission Types by Year for Patients in their 20s', 
+       caption = 'In 2016, people in their 20s were all admitted as urgent, but less than half were urgent in 2017 and 2018. Also an increasing amount labeled as Electric each year')
+
+ggsave(filename = 'midtermplot8.png', plot = gg8)
+```
+```{r}
+df$arrival <- case_when(df$er_mode %in% c(0) ~ 'N/A',
+  df$er_mode %in% c(1)~ 'Ambulance', df$er_mode %in% c(2) ~ 'Helicopter',
+  df$er_mode %in% c(3)~ 'Police/Law Enf.', df$er_mode %in% c(4) ~ 'Walk-In',
+  df$er_mode %in% c(5)~ 'Other', df$er_mode %in% c(6)~ 'Unknown')
+
+df %>% 
+  filter(pt_state == "CT" | pt_state == "MA" | pt_state == "RI", er_mode < 6) %>% 
+  ggplot()+
+  geom_bar(mapping=aes(x=pt_state, fill=arrival), position = 'fill') + labs(x='Patient State of Residence', 
+       y='Proportion of Patients', 
+       title = 'Methods of Arrival by State', 
+       caption = 'Patients from CT are primarily walk-ins, patients from MA are primarily brought in by ambulance, patients from RI are a mix of both')
+
+gg9 <- df %>% 
+  filter(pt_state == "CT" | pt_state == "MA" | pt_state == "RI", er_mode < 6) %>% 
+  ggplot()+
+  geom_bar(mapping=aes(x=pt_state, fill=arrival), position = 'fill') + labs(x='Patient State of Residence', 
+       y='Proportion of Patients', 
+       title = 'Methods of Arrival by State', 
+       caption = 'Patients from CT are primarily walk-ins, patients from MA are primarily brought in by ambulance, patients from RI are a mix of both')
+
+ggsave(filename = 'midtermplot9.png', plot = gg9)
+
+```
+```{r}
+df %>%
+  filter(los<=1) %>% 
+  ggplot()+geom_smooth(aes(x=age, y=tot)) + labs(x='Patient Age', 
+       y='Total Cost to Patient', 
+       title = 'Patient Cost by Age for Short Visits', 
+       caption = 'The cost of being admitted for one day or less seems to increase in cost as people get older until they reach retirement age')
+
+gg10 <- df %>%
+  filter(los<=1) %>% 
+  ggplot()+geom_smooth(aes(x=age, y=tot)) + labs(x='Patient Age', 
+       y='Total Cost to Patient', 
+       title = 'Patient Cost by Age for Short Visits', 
+       caption = 'The cost of being admitted for one day or less seems to increase in cost as people get older until they reach retirement age')
+
+ggsave(filename = 'midtermplot10.png', plot = gg10)
+
+```
+
+2. Make an animation plot. 
+```{r}
+library(gganimate)
+library(ggplot2)
+library(tidyverse)
+library(knitr)
+
+d1 <- df %>% group_by(provider, paytype) %>% summarise(avg_tot = mean(tot))
+d2 <- d1 %>% group_by(provider) %>% mutate(rank=rank(-avg_tot)) 
+d3 <- d2 %>% filter(rank <= 10)
+a1 <- d3 %>% ggplot(aes(x=rank, y=avg_tot, group=paytype, fill=paytype, label=paytype)) + geom_col()+
+    geom_text(aes(y = avg_tot, label = paytype), hjust = 1.4)+ 
+    coord_flip(clip = "off", expand = FALSE) +scale_x_reverse()+
+    labs(title = 'Provider {closest_state}', x='', y='Average Total Costs', fill='provider')+
+    theme(plot.title = element_text(hjust = 1, size = 22),
+          axis.ticks.y = element_blank(),
+          axis.text.y  = element_blank()) + 
+    transition_states(provider)+
+    ease_aes("cubic-in-out")
+animate(a1, nframes = 400)
+
+gg11 <- d3 %>% ggplot(aes(x=rank, y=avg_tot, group=paytype, fill=paytype, label=paytype)) + geom_col()+
+    geom_text(aes(y = avg_tot, label = paytype), hjust = 1.4)+ 
+    coord_flip(clip = "off", expand = FALSE) +scale_x_reverse()+
+    labs(title = 'Provider {closest_state}', x='', y='Average Total Costs', fill='provider')+
+    theme(plot.title = element_text(hjust = 1, size = 22),
+          axis.ticks.y = element_blank(),
+          axis.text.y  = element_blank()) + 
+    transition_states(provider)+
+    ease_aes("cubic-in-out")
+animate(a1, nframes = 400)
+
+anim_save(filename = 'midtermplot11.gif', plot = gg11)
+```
+
+```
+
+3. Write a paragraph to summarize the section and give your comments on the results. 
+
+```{r}
+'There were a number of interesting finds in creating the plots with this data - the first being that patients among all providers are overwhelmingly white. Bradley and Women & Infants did have slightly more diversity in their patient groups, though the majority were still white. Some other interesting finds are within the plots that focus solely on teens. Teens have the longest average stay of all age groups by several days, and they also have the most expensive average total costs during the summertime. This could be explained by them being out of school and having more time to do what they want and risk of potentially getting injured. Looking at how men versus women who are working age pay for their expenses, it seems that more men use programs such as Medicare and Medicaid while women use insurance such as Blue Cross. Focusing on newborns, those with lower birth weights seemed to collectively spend many more days in the nicu than those who were born heavier, which is to be expected. Comparing transportation methods for patients in CT, RI, and MA, those from CT tend to find their own transportation and do walk-in methods. Those from MA are heavily reliant on ambulances, and those in RI were a split between the two. Finally, for short visits, the average cost seems to increase dramatically as people age until hitting retirement age (about 60), when it levels off and begins to decline.'
+
+```
+
+
+-------
+
+## III. Predictive Models
+
+Continue with the data from part I. Make sure you do not have any missing values in the data. Use the follows as the target and input variables: 
+
+*Target Variable*: Create the target variable taking value of 
+
+  - `low` if the total charge of a patient (`tot`) is smaller than the median of the total charge, and
+
+  - `high` otherwise. 
+
+
+*Input Variables*:
+
+  - "age","sex","raceethn","provider","moa","mod","admtype","campus", 'los'
+```{r}
+df <- read_csv('midterm.jakecardines.csv')
+
+df <- df %>%  select(-yod, -payfix, -pay_ub92, -yoa, - asource, -preopday, -service, -icu, -ccu, -dispub92, -payer, -drg, -trandb, -randbg, -randbs, -orr, -anes, -seq, -lab, -dtest, -ther, -blood, -phar, -other, -patcon, -bwght, -total, -ecodub92, -b_wt, -pt_state, -diag_adm, -ancilar, -er_fee, -er_chrg, -er_mode, -obs_chrg, -obs_hour, -psycchrg, -nicu_day)
+
+median(df$tot)
+
+df$target <- case_when(df$tot < 21854 ~ 'low', TRUE ~ 'high')
+
+write_csv(df, 'midtermpt3.jakecardines.csv')
+```
+
+```{r}
+df <- df %>% select(-tot)
+```
+  
+  
+-------
+
+1. Use `filter` function to filter out rows where `raceethn==''` or `admtype==''`. Make sure all the categorical variables are factor, numeric variables are numeric. Set Training : Testing Split = 10 : 90 
+```{r}
+df <- df %>% 
+  filter(!is.na(raceethn)) %>% 
+  filter(!is.na(admtype)) %>% 
+  filter(sex <=2) %>% 
+  filter(!is.na(admtype)) %>% 
+  filter(admtype <9)
+  
+
+ df$sex <- case_when(df$sex %in% c(1) ~ 'Male',
+  df$sex %in% c(2)~ 'Female',df$sex %in% c(9)~ 'Unknown')  
+
+df$raceethn <- case_when(df$raceethn %in% c(1) ~ 'White',
+  df$raceethn %in% c(2)~ 'Black', df$raceethn %in% c(3) ~ 'Asian', df$raceethn %in% c(4) ~ 'American Indian',
+  df$raceethn %in% c(5)~ 'Native Hawaiian', df$raceethn %in% c(6) ~ 'Other', df$raceethn %in% c(7) ~ 'Hispanic',
+  df$raceethn %in% c(9)~ 'Unknown')
+
+df$provider <- case_when(df$provider %in% c(7201) ~ 'Newport',
+  df$provider %in% c(7202)~ 'St. Joseph Health Services of RI', df$provider %in% c(7203) ~ 'Memorial', df$provider %in% c(7204) ~ 'Miriam',
+  df$provider %in% c(7205)~ 'Rhode Island Hospital', df$provider %in% c(7206) ~ 'Roger Williams', df$provider %in% c(7209) ~ 'South County',
+  df$provider %in% c(7210)~ 'Kent County', df$provider %in% c(7211)~ 'Westerly', df$provider %in% c(7212) ~ 'Rehab of RI', df$provider %in% c(7213) ~ 'Landmark Medical Center',
+  df$provider %in% c(7214)~ 'Women and Infants', df$provider %in% c(7215)~ 'Bradley', df$provider %in% c(7216)~ 'Butler')
+
+
+df$admtype <- case_when(df$admtype %in% c(1) ~ 'Emergency',
+  df$admtype %in% c(2)~ 'Urgent', df$admtype %in% c(3) ~ 'Electric', df$admtype %in% c(4) ~ 'Newborn',
+  df$admtype %in% c(5)~ 'Trauma',
+  df$admtype %in% c(9)~ 'Not Available')
+
+
+df$campus <- case_when(df$campus %in% c(0) ~ 'Hospital Has Only One Premise',
+  df$campus %in% c(1)~ 'St. Joseph Health Services of Rhode 
+       Island – Our Lady of Fatima 
+       Hospital', df$campus %in% c(2) ~ 'St. Joseph Health Services of Rhode 
+      Island – St. Joseph Hospital for  
+     Specialty Care', df$campus %in% c(3) ~ 'Rhode Island Hospital - Adult')
+
+
+ df %>%  mutate(target = as.factor(target),
+         age = as.numeric(age),
+         sex = as.factor(sex),
+         raceethn = as.factor(raceethn), 
+         provider = as.factor(provider),
+         moa = as.numeric(moa),
+         mod = as.numeric(mod),
+         admtype = as.factor(admtype),
+         campus = as.factor(campus),
+         los = as.numeric(los))
+```
+
+
+```{r}
+df$campus <- NULL
+library(caret)
+ 
+splitIndex <- createDataPartition(df$target, p = .10, 
+                                  list = FALSE)
+df_train <- df[ splitIndex,]
+df_test <- df[-splitIndex,]
+```
+
+
+2. Train a decision tree using `rpart`.  Plot the decision tree. Plot the variable importance ranked by the tree. 
+```{r}
+library(rpart)
+tree_model <- rpart(target ~ ., data = df_train,
+                 control = rpart.control(maxdepth = 3))
+
+library(rattle)
+fancyRpartPlot(tree_model)
+
+tree_model$variable.importance
+barplot(tree_model$variable.importance)
+```
+
+3. Using caret for this question. Set `Training Control` to be: Use Cross-Validation of 5 folds across all models.  Train & tune at least 2 different models (i.e. two different values for `method=` in the train function of caret).  Plot the hyper-parameter tuning plots for each model. 
+```{r}
+library(caret)
+library(mlbench)
+
+trControl = trainControl(method = "cv",
+                         number = 5)
+forest_ranger <- train(target~., data=df_train, 
+                    method = "ranger", trControl = trControl, na.action = na.omit)
+pred <- predict(forest_ranger, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+cm$overall
+print(forest_ranger)
+
+trControl = trainControl(method = "cv",
+                         number = 5)
+tuneGrid = expand.grid(mtry = 2:4,
+                       splitrule = c('gini', 'extratrees'),
+                       min.node.size = c(1:10))
+forest_ranger <- train(target~., data=df_train, 
+                    method = "ranger", 
+                    trControl = trControl,
+                    tuneGrid = tuneGrid)
+plot(forest_ranger)
+```
+```{r}
+trControl = trainControl(method = "cv",
+                         number = 5)
+GLM <- train(target~., data=df_train, 
+                    method = "glmnet", trControl = trControl)
+pred <- predict(GLM, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+cm$overall
+print(GLM)
+
+getModelInfo('glmnet')$glmnet$parameters
+
+trControl = trainControl(method = "cv",
+                         number = 5)
+tuneGrid = expand.grid(alpha = c(0:1),
+                       lambda = c(0:1))
+GLM <- train(target~., data=df_train, 
+                    method = "glmnet", 
+                    trControl = trControl,
+                    tuneGrid = tuneGrid)
+plot(GLM)
+```
+```{r}
+trControl = trainControl(method = "cv",
+                         number = 5)
+FDA <- train(target~., data=df_train, 
+                    method = "fda", trControl = trControl)
+pred <- predict(FDA, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+cm$overall
+print(FDA)
+
+getModelInfo('fda')$fda$parameters
+
+trControl = trainControl(method = "cv",
+                         number = 5)
+tuneGrid = expand.grid(degree = c(1:2),
+                       nprune = c(1:15))
+FDA <- train(target~., data=df_train, 
+                    method = "fda", 
+                    trControl = trControl,
+                    tuneGrid = tuneGrid)
+plot(FDA)
+```
+
+4. Plot the comparison of the models in 3. 
+```{r}
+trControl = trainControl(method = "cv",
+                         number = 5)
+GLM <- train(target~., data=df_train, 
+                                method = "glmnet", 
+                                trControl = trControl)
+forest_ranger <- train(target~., data=df_train, 
+                    method = "ranger", 
+                                trControl = trControl)
+FDA <- train(target~., data=df_train, 
+                                method = "fda", 
+                                trControl = trControl)
+results <- resamples(list('GLM' = GLM,
+                          'Random Forest' = forest_ranger,
+                          'FDA'= FDA))
+bwplot(results)
+```
+
+5. What is your final selection for the model? Test the accuracy of your final model on the test data. 
+```{r}
+'The ranger method is the best of the three, so we choose that one'
+
+pred <- predict(forest_ranger, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+
+
+cm$overall[1]
+```
+
+
+6. Create another `target` variable (binary), decide the input variables and redo 1 to 5. 
+```{r}
+df <- read_csv('midterm.jakecardines.csv')
+
+df <- df %>%  select(-yod, -payfix, -pay_ub92, -yoa, - asource, -preopday, -service, -icu, -ccu, -dispub92, -payer, -drg, -trandb, -randbg, -randbs, -orr, -anes, -seq, -lab, -dtest, -ther, -blood, -phar, -other, -patcon, -bwght, -total, -ecodub92, -b_wt, -pt_state, -diag_adm, -ancilar, -er_fee, -er_chrg, -er_mode, -obs_chrg, -obs_hour, -psycchrg, -nicu_day)
+
+
+df$target <- case_when(df$los < 5 ~ 'short', TRUE ~ 'long')
+
+write_csv(df, 'midtermpt3q6.jakecardines.csv')
+
+```
+
+```{r}
+df <- df %>% select(-los)
+```
+
+```{r}
+df <- df %>% 
+  filter(!is.na(raceethn)) %>% 
+  filter(!is.na(admtype)) %>% 
+  filter(sex <=2) %>% 
+  filter(!is.na(admtype)) %>% 
+  filter(admtype <9)
+  
+
+ df$sex <- case_when(df$sex %in% c(1) ~ 'Male',
+  df$sex %in% c(2)~ 'Female',df$sex %in% c(9)~ 'Unknown')  
+
+df$raceethn <- case_when(df$raceethn %in% c(1) ~ 'White',
+  df$raceethn %in% c(2)~ 'Black', df$raceethn %in% c(3) ~ 'Asian', df$raceethn %in% c(4) ~ 'American Indian',
+  df$raceethn %in% c(5)~ 'Native Hawaiian', df$raceethn %in% c(6) ~ 'Other', df$raceethn %in% c(7) ~ 'Hispanic',
+  df$raceethn %in% c(9)~ 'Unknown')
+
+df$provider <- case_when(df$provider %in% c(7201) ~ 'Newport',
+  df$provider %in% c(7202)~ 'St. Joseph Health Services of RI', df$provider %in% c(7203) ~ 'Memorial', df$provider %in% c(7204) ~ 'Miriam',
+  df$provider %in% c(7205)~ 'Rhode Island Hospital', df$provider %in% c(7206) ~ 'Roger Williams', df$provider %in% c(7209) ~ 'South County',
+  df$provider %in% c(7210)~ 'Kent County', df$provider %in% c(7211)~ 'Westerly', df$provider %in% c(7212) ~ 'Rehab of RI', df$provider %in% c(7213) ~ 'Landmark Medical Center',
+  df$provider %in% c(7214)~ 'Women and Infants', df$provider %in% c(7215)~ 'Bradley', df$provider %in% c(7216)~ 'Butler')
+
+
+df$admtype <- case_when(df$admtype %in% c(1) ~ 'Emergency',
+  df$admtype %in% c(2)~ 'Urgent', df$admtype %in% c(3) ~ 'Electric', df$admtype %in% c(4) ~ 'Newborn',
+  df$admtype %in% c(5)~ 'Trauma',
+  df$admtype %in% c(9)~ 'Not Available')
+
+
+df$campus <- case_when(df$campus %in% c(0) ~ 'Hospital Has Only One Premise',
+  df$campus %in% c(1)~ 'St. Joseph Health Services of Rhode 
+       Island – Our Lady of Fatima 
+       Hospital', df$campus %in% c(2) ~ 'St. Joseph Health Services of Rhode 
+      Island – St. Joseph Hospital for  
+     Specialty Care', df$campus %in% c(3) ~ 'Rhode Island Hospital - Adult')
+
+
+ df %>%  mutate(target = as.factor(target),
+         age = as.numeric(age),
+         sex = as.factor(sex),
+         raceethn = as.factor(raceethn), 
+         provider = as.factor(provider),
+         moa = as.numeric(moa),
+         mod = as.numeric(mod),
+         admtype = as.factor(admtype),
+         campus = as.factor(campus),
+         tot = as.numeric(tot))
+```
+```{r}
+df$campus <- NULL
+library(caret)
+ 
+splitIndex <- createDataPartition(df$target, p = .10, 
+                                  list = FALSE)
+df_train <- df[ splitIndex,]
+df_test <- df[-splitIndex,]
+```
+
+```{r}
+library(rpart)
+tree_model <- rpart(target ~ ., data = df_train,
+                 control = rpart.control(maxdepth = 3))
+
+library(rattle)
+fancyRpartPlot(tree_model)
+
+tree_model$variable.importance
+barplot(tree_model$variable.importance)
+```
+
+```{r}
+trControl = trainControl(method = "cv",
+                         number = 5)
+forest_ranger <- train(target~., data=df_train, 
+                    method = "ranger", trControl = trControl, na.action = na.omit)
+pred <- predict(forest_ranger, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+cm$overall
+print(forest_ranger)
+
+trControl = trainControl(method = "cv",
+                         number = 5)
+tuneGrid = expand.grid(mtry = 2:4,
+                       splitrule = c('gini', 'extratrees'),
+                       min.node.size = c(1:10))
+forest_ranger <- train(target~., data=df_train, 
+                    method = "ranger", 
+                    trControl = trControl,
+                    tuneGrid = tuneGrid)
+plot(forest_ranger)
+```
+```{r}
+trControl = trainControl(method = "cv",
+                         number = 5)
+GLM <- train(target~., data=df_train, 
+                    method = "glmnet", trControl = trControl)
+pred <- predict(GLM, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+cm$overall
+print(GLM)
+
+trControl = trainControl(method = "cv",
+                         number = 5)
+tuneGrid = expand.grid(alpha = c(0:1),
+                       lambda = c(0:1))
+GLM <- train(target~., data=df_train, 
+                    method = "glmnet", 
+                    trControl = trControl,
+                    tuneGrid = tuneGrid)
+plot(GLM)
+```
+```{r}
+trControl = trainControl(method = "cv",
+                         number = 5)
+FDA <- train(target~., data=df_train, 
+                    method = "fda", trControl = trControl)
+pred <- predict(FDA, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+cm$overall
+print(FDA)
+
+trControl = trainControl(method = "cv",
+                         number = 5)
+tuneGrid = expand.grid(degree = c(1:2),
+                       nprune = c(1:15))
+FDA <- train(target~., data=df_train, 
+                    method = "fda", 
+                    trControl = trControl,
+                    tuneGrid = tuneGrid)
+plot(FDA)
+```
+
+```{r}
+trControl = trainControl(method = "cv",
+                         number = 5)
+GLM <- train(target~., data=df_train, 
+                                method = "glmnet", 
+                                trControl = trControl)
+forest_ranger <- train(target~., data=df_train, 
+                    method = "ranger", 
+                                trControl = trControl)
+FDA <- train(target~., data=df_train, 
+                                method = "fda", 
+                                trControl = trControl)
+results <- resamples(list('GLM' = GLM,
+                          'Random Forest' = forest_ranger,
+                          'FDA'= FDA))
+bwplot(results)
+```
+```{r}
+'The ranger method is the best of the three, so we choose that one'
+
+pred <- predict(forest_ranger, df_test)
+cm <- confusionMatrix(data = pred, reference = as.factor(df_test$target))
+
+
+cm$overall[1]
+```
+
+
+
+7. Write a paragraph to summarize the section and give your comments on the results. 
+```{r}
+'All three models (random forest, GLM, or flexible discriminant analysis) worked very well whether the binary target variable was based on high/low for tot or short/long for los. For the training data, they all performed with over 80% accuracy, which is good to see. The random forest ranger method was the best of the three by a small margin for both target variables, so that ended up being the chosen model. Both also found the optimal value for hyper parameters mtry and min.node.size to be 14 and 1, respectively, though the ranger method for the tot target variable model was best with gini split rule while the ranger method for the los target variable model was best with extratrees as the split rule. Running with the test data was successful for both, as the ranger method accuracy was 83.74% with tot as the target variable and 84.27% accurate with los as the target variable. Los and tot were highly important variables for one another, which is very sensible since the length of stay at a facility and the total cost should have a direct positive correlation. The campus variable was removed after being problematic to the models ad inability to remove some missing values, though all models proved to be successful in its absence anyway.'
+```
+
+
+-------

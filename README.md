@@ -25,3 +25,7 @@
 [Click here to my Assignment 11](assignment11.html)
 
 [Click here to my Assignment 12](assignment12.html)
+
+[Click here to my Midterm Project](Midterm_JakeCardines.html)
+
+[Click here to my Midterm Presentation](Midterm_Presentation_JakeCardines.html)
