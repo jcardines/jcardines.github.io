@@ -1,0 +1,269 @@
+
+---
+output: 
+  html_document:
+  pdf_document: default
+  word_document: default
+title: "Assignment 15: Writing a function - Conditional Statement"
+---
+
+***Submission***: Submit the link on Github of the assignment to Canvas
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+-------
+
+#### NOTICE: Question 7 and 8 are optional. 
+
+-------
+
+1. Write a function to calculate the age of a person.  Give an example to test your function. 
+
+- Input: a number, x, (year born)
+
+- Output: Print out "You are r age". Where r is the age of the person, i.e. 2020 - x. 
+
+Hint: [Similar Function](https://bryantstats.github.io/math421/gganimate/17_writing_functions.html#42)
+
+```{r}
+age <- function(x)
+{
+  r = 2022-x
+  print(paste0('You are currently ', r, ' years old'))
+}
+
+age(2001)
+age(1970)
+
+```
+
+-------
+
+2. Write the following function. Give an example to test your function. 
+
+- Input: a number
+
+- Output: print out: "You input an even number!" if the number is event, or "You input an odd number!" otherwise. 
+
+Hint: [Similar Function](https://bryantstats.github.io/math421/gganimate/17_writing_functions.html#46)
+
+```{r}
+number <- function(x)
+{
+  if(x %% 2==0)
+  {
+    print('You input an even number!') 
+  }
+  else
+  {
+    print('You input an odd number!')
+  }
+}
+
+number(29)
+number(30)
+```
+
+
+-------
+
+3. Write the following function.  Give an example to test your function. 
+
+- Input: a numeric vector 
+
+- Output:  
+
+  - if the input vector has missing values: return the input vector with missing values replaced by mean
+  
+  - if the input vector has no missing value: return the same input vector
+  
+Hint: [Similar Function](https://bryantstats.github.io/math421/gganimate/17_writing_functions.html#50)
+
+```{r}
+mean_impute <- function(x)
+{
+  if(!is.numeric(x))
+  {
+    # Find the mean of x
+    mean_of_x <- mean(x, na.rm = TRUE)
+    # Replace the missing by the mean
+    library(tidyr)
+    x <- replace_na(x, mean_of_x) 
+  }
+return(x)    
+}
+```
+
+```{r}
+library(tidyverse)
+df <- read_csv('https://bryantstats.github.io/math421/data/titanic.csv')
+
+x1 <- mean_impute(df$Pclass)
+sum(is.na(x1))
+```
+```{r}
+x1 <- mean_impute(df$Age)
+sum(is.na(x1))
+```
+
+-------
+
+4. Write the following function.  Give an example to test your function. 
+
+- Input: a vector x 
+
+- Output:  The vector x where the missing values replaced by the mean (if x is numeric) or the mode (if x is non-numeric).  If x does not have missing value, return the same vector x.  
+
+Hint: Use If-statement to combine the function in Question 3 and [this function](https://bryantstats.github.io/math421/gganimate/17_writing_functions.html#49)
+
+```{r}
+mean_impute <- function(x)
+{
+  if(is.numeric(x))
+  {
+    # Find the mean of x
+    mean_of_x <- mean(x, na.rm = TRUE)
+    # Replace the missing by the mean
+    library(tidyr)
+    x <- replace_na(x, mean_of_x) 
+  }
+  
+}
+
+mode_impute <- function(x)
+  {
+  if(!is.numeric(x))
+  {
+    # Find the mode of x
+     mode_of_x <- names(sort(-table(x)))[1]
+        library(tidyr)
+    x <- replace_na(x, mode_of_x) 
+  }
+return(x)    
+}
+```
+
+
+```{r}
+x1 <- mode_impute(df$Embarked)
+sum(is.na(x1))
+```
+```{r}
+x2 <- mean_impute(df$Age)
+sum(is.na(x2))
+```
+
+-------
+
+5. Write the following function. Give examples to test your function. 
+
+- Input: A data frame of two variables x and y
+
+- Output: 
+
+  - A boxplot of x by y if x is numeric and y is non-numeric
+ 
+  - A boxplot of y by x if y is numeric and x is non-numeric
+ 
+  - print out 'This function cannot visualize your data' otherwise
+  
+```{r}
+viz <- function(d)
+{
+  if(is.numeric(d[[1]])&(!(is.numeric(d[[2]]))))
+                         { 
+    d %>% ggplot()+
+  geom_boxplot(mapping = aes(x = d[[1]], y = d[[2]]))+
+      labs(x = names(d)[1], y = names(d)[2])
+  }
+  else if (!(is.numeric(d[[1]]))&(is.numeric(d[[2]])))
+  {
+    d %>% ggplot()+
+  geom_boxplot(mapping = aes(x = d[[1]], y = d[[2]]))+
+      labs(x = names(d)[1], y = names(d)[2])
+  }
+  else 
+  {
+    print('This function cannot visualize your data.')
+  }
+}
+```
+  
+```{r}
+d <- df %>% select(Age, Fare)
+viz(d)
+```
+```{r}
+d <- df %>% select(Age, Embarked)
+viz(d)
+```
+```{r}
+d <- df %>% select(Embarked, Age)
+viz(d)
+```
+
+ 
+-------
+ 
+6. Combine the function in Question 5 and the function in this example ([Link](https://bryantstats.github.io/math421/gganimate/17_writing_functions.html#53)) to have a function that can plot all possible cases (2 categorical, 2 numeric, 1 numeric and 1 categorical). 
+
+```{r}
+viz <- function(d)
+{
+  if(is.numeric(d[[1]])&is.numeric(d[[2]]))
+  {
+    d %>% ggplot(aes(x = d[[1]], y = d[[2]]))+
+      geom_point()+
+      labs(x = names(d)[1], y = names(d)[2])
+  }
+  else if (!(is.numeric(d[[1]])|is.numeric(d[[2]])))
+  {
+    d %>% ggplot(aes(x = d[[1]], fill = d[[2]]))+
+      geom_bar(position = 'dodge')+
+      labs(x = names(d)[1], fill = names(d)[2])
+  }
+
+  else if(is.numeric(d[[1]])&(!(is.numeric(d[[2]]))))
+                         { 
+    print('3')
+    d %>% ggplot()+
+  geom_boxplot(mapping = aes(x = d[[1]], y = d[[2]]))+
+      labs(x = names(d)[1], y = names(d)[2])
+  }
+  
+  else if (!(is.numeric(d[[1]]))&(is.numeric(d[[2]])))
+  {
+    print('4')
+    d %>% ggplot()+
+  geom_boxplot(mapping = aes(x = d[[1]], y = d[[2]]))+
+      labs(x = names(d)[1], y = names(d)[2])
+  }
+
+}
+```
+
+```{r}
+d <- df %>% select(Age, Embarked)
+viz(d)
+```
+
+```{r}
+d <- df %>% select(Embarked, Age)
+viz(d)
+```
+```{r}
+d <- df %>% select(Age, Fare)
+viz(d)
+```
+
+
+```{r}
+df$Pclass <- factor(df$Pclass)
+d <- df %>% select(Sex, Pclass)
+viz(d)
+```
+
+
+-------
