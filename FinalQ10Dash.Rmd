@@ -1,0 +1,247 @@
+---
+title: "Vehicles & Emissions - Final Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    source_code: embed
+    logo: logo.png
+    social: menu
+
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(DT)
+library(lubridate)
+df <- read_csv('finaldata3.csv')
+
+df$date <- mdy(df$date)
+
+df$Transmission <- case_when(df$transmission<1 ~ 'Automatic', TRUE ~ 'Manual')
+
+make_input <- unique(df$make)
+
+```
+
+{.sidebar}
+=======================================================================
+
+There are a number of factors that impact how much a vehicle pollutes, including city and highway gas mileage, vehicle class, make, model, and more. Filter the data to the make, class, fuel economy range, and transmission you'd like, then see how much CO2 those vehicles emit in grams per mile. 
+
+For this data, the date range is made up, though you can still adjust it to filter vehicles. 
+
+
+```{r}
+dateRangeInput(inputId = "date_input", 
+               label = h2("Date Range"), 
+               start = min(df$date), 
+               end = max(df$date),
+               min = min(df$date), 
+               max = max(df$date))
+
+selectInput(inputId = "make_input", 
+            label = h3("Make"),
+            choices = make_input, 
+            selected = 'TOYOTA')
+
+checkboxGroupInput(inputId = "class_input", 
+                   label = h3("Select Class"),
+                   choices = c("SUBCOMPACT", "COMPACT","MID-SIZE","FULL-SIZE","SUV", "MINIVAN", "PICKUP TRUCK"), 
+                   inline = TRUE,
+                   selected = 'MID-SIZE')
+
+
+
+sliderInput(inputId = "mpg_input",
+            label = h3("Highway MPG Range"),
+            min = min(df$highway_mpg, na.rm=TRUE),
+            max = max(df$highway_mpg, na.rm=TRUE),
+            value= c(20, 50))
+
+
+radioButtons(inputId = "transmission_input", 
+             label = h2("Transmission Type"),
+             choices = c('Automatic', 'Manual'),
+             inline = TRUE,
+             selected = 'Automatic')
+
+
+```
+Data Tab
+=======================================================================
+
+
+Column {data-width=500, .tabset}
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+kable(df)
+```
+
+
+### Vehicle Search 
+
+```{r}
+datatable(df, options = list(
+  pageLength = 500
+))
+```
+
+
+Column {data-width=100}
+-----------------------------------------------------------------------
+MPG & Emissions
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### City MPG vs Emissions
+
+```{r}
+
+renderPlotly({
+  p1 <- df %>% 
+    filter(date>input$date_input[1], date<input$date_input[2]) %>% 
+    
+    filter(highway_mpg>input$mpg_input[1], highway_mpg<input$mpg_input[2]) %>% 
+    
+    filter(make %in% input$make_input) %>%
+    
+    filter(class %in% input$class_input) %>%
+    
+    filter(Transmission %in% input$transmission_input) %>% 
+    
+    ggplot(aes(x=city_mpg, y=emissions_per_mile))+
+    geom_point()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Highway MPG vs Emissions
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(date>input$date_input[1], date<input$date_input[2]) %>% 
+    
+    filter(highway_mpg>input$mpg_input[1], highway_mpg<input$mpg_input[2]) %>% 
+    
+    filter(make %in% input$make_input) %>%
+    
+    filter(class %in% input$class_input) %>%
+    
+    filter(Transmission %in% input$transmission_input) %>% 
+    
+    ggplot(aes(x=highway_mpg, y=emissions_per_mile))+
+    geom_point()
+  ggplotly(p1)
+})
+```
+
+
+Emissions Distributions
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Vehicle Brand Emissions Density Distribution
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(date>input$date_input[1], date<input$date_input[2]) %>% 
+    
+    filter(highway_mpg>input$mpg_input[1], highway_mpg<input$mpg_input[2]) %>% 
+    
+    filter(make %in% input$make_input) %>%
+    
+    filter(class %in% input$class_input) %>%
+    
+    filter(Transmission %in% input$transmission_input) %>% 
+    
+    ggplot(aes(x=emissions_per_mile, color=make))+
+    geom_density()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Density Plot of Vehicle Emissions by Class
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(date>input$date_input[1], date<input$date_input[2]) %>% 
+    
+    filter(highway_mpg>input$mpg_input[1], highway_mpg<input$mpg_input[2]) %>% 
+    
+    filter(make %in% input$make_input) %>%
+    
+    filter(class %in% input$class_input) %>%
+    
+    filter(Transmission %in% input$transmission_input) %>% 
+    
+    ggplot(aes(x=emissions_per_mile, color=class))+
+    geom_density()
+  ggplotly(p1)
+})
+```
+
+
+
+
+Cylinders
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Bar Plot of Cylinders Among Models
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(date>input$date_input[1], date<input$date_input[2]) %>% 
+    
+    filter(highway_mpg>input$mpg_input[1], highway_mpg<input$mpg_input[2]) %>% 
+    
+    filter(make %in% input$make_input) %>%
+    
+    filter(class %in% input$class_input) %>%
+    
+    filter(Transmission %in% input$transmission_input) %>% 
+    
+    ggplot(aes(x=cylinders, color=model))+
+    geom_bar()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Cylinders & Emissions
+
+- The amount of cylinders a car has typically has a major role in how efficient it is. Cars typically have 4, 6, or 8 cylinders, and the more cylinders you add decreases efficiency in most cases.
+
+- Smaller vehicle models may only have 4 cylinders while larger SUVs have 6. Different variations of a particular model may also have different numbers of cylinders. The plot shows a breakdown of the selected manufacturers vehicles in terms of how many cylinders they have.  
+
+```{r}
+image_url <- "Honda-Sedan-Hatchback-Lineup.png"
+```
+<center><img src="`r image_url`"></center>

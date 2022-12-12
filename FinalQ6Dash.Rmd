@@ -1,0 +1,73 @@
+---
+title: "Vehicle Emissions - SliderInput"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    source_code: embed
+    social: menu
+
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(DT)
+df <- read_csv('finaldata2.csv')
+
+
+make_input <- unique(df$make)
+```
+
+{.sidebar}
+=======================================================================
+
+Miles per gallon and number of cylinders impact emissions per mile. Filter the amount of carbon emissions, measured in grams per mile, to a desired range to see how the city MPG and number of cylinders of cars vary from one emissions range to another. 
+
+```{r}
+sliderInput(inputId = "emissions_input",
+            label = h2("Select Emissions Range in g/mi"),
+            min = min(df$emissions_per_mile, na.rm=TRUE),
+            max = max(df$emissions_per_mile, na.rm=TRUE),
+            value= c(250, 350))
+
+```
+
+Main Tab 1
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Density Plot of City MPG by Class
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(class %in% c("COMPACT", "MID-SIZE","FULL-SIZE", "SUV")) %>% 
+    filter(emissions_per_mile>input$emissions_input[1], emissions_per_mile<input$emissions_input[2]) %>%
+    ggplot(aes(x=city_mpg, color=class))+
+    geom_density()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Bar Plot of Number of Cylinders by Class
+
+```{r}
+renderPlotly({
+  p2 <- df %>% 
+    filter(class %in% c("COMPACT", "MID-SIZE","FULL-SIZE", "SUV")) %>% 
+    filter(emissions_per_mile>input$emissions_input[1], emissions_per_mile<input$emissions_input[2]) %>%
+    ggplot(aes(x=cylinders, fill=class))+
+    geom_bar()
+  ggplotly(p2)
+})
+```

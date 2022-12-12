@@ -1,0 +1,71 @@
+---
+title: "Vehicle Emissions by Brand"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    source_code: embed
+    social: menu
+
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(DT)
+df <- read_csv('finaldata2.csv')
+df$transmission = factor(df$transmission)
+
+
+```
+
+{.sidebar}
+=======================================================================
+
+There are a number of factors that determine how much pollution is produced by modern vehicles. Things like fuel types, number of cylinders, engine size, and fuel efficiency all contribute to how efficient a car will be overall.
+
+```{r}
+selectInput(inputId = "make_input", 
+            label = h2("Select Make"),
+            choices = unique(df$make), 
+            selected = 'MAZDA')
+```
+
+Main Tab 1
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Density Plot
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(make==input$make_input) %>% 
+    filter(class %in% c("SUBCOMPACT", "COMPACT", "MID-SIZE", "SUV", "FULL-SIZE", "PICKUP TRUCK")) %>%
+    ggplot(aes(x=highway_mpg, color=class))+
+    geom_density()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Bar Plot
+
+```{r}
+renderPlotly({
+  p2 <- df %>% 
+    filter(make==input$make_input) %>% 
+    filter(class %in% c("SUBCOMPACT", "COMPACT", "MID-SIZE","FULL-SIZE", "SUV")) %>%
+    ggplot(aes(x=class, fill=transmission))+
+    geom_bar()
+  ggplotly(p2)
+})
+```

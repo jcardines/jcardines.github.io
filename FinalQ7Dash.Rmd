@@ -1,0 +1,72 @@
+---
+title: "Vehicle Emissions - Radio Button"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    source_code: embed
+    social: menu
+
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(DT)
+df <- read_csv('finaldata2.csv')
+
+
+make_input <- unique(df$make)
+```
+
+{.sidebar}
+=======================================================================
+
+Select a vehicle classification to see the densiry distribution of carbon emissions of vehicles in that class among different automakers in the first plot, as well as how many models within that class are offered by Ford, Honda, Kia, and Mazda.  
+
+```{r}
+radioButtons(inputId = "class_input", 
+             label = h2("Select Class"),
+             choices = c("COMPACT","MID-SIZE","FULL-SIZE", "SUV"),
+             inline = TRUE,
+             selected = 'COMPACT')
+```
+
+Main Tab 1
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Density Plot
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(class==input$class_input) %>% 
+     filter(make %in% c('HONDA', 'FORD', 'KIA', 'MAZDA')) %>% 
+    ggplot(aes(x=emissions_per_mile, color=make))+
+    geom_density()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Bar Plot
+
+```{r}
+renderPlotly({
+  p2 <- df %>% 
+    filter(class==input$class_input) %>% 
+    filter(make %in% c('HONDA', 'FORD', 'KIA', 'MAZDA')) %>% 
+    ggplot(aes(x=make, fill=class))+
+    geom_bar()
+  ggplotly(p2)
+})
+```

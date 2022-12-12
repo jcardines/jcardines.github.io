@@ -1,0 +1,73 @@
+---
+title: "Vehicle Emissions - Check Box"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    source_code: embed
+    social: menu
+
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(DT)
+
+df <- read_csv('finaldata2.csv')
+
+make_input <- unique(df$make)
+```
+
+{.sidebar}
+=======================================================================
+
+The size of a car determines its class, which has an impact on how much emissions it creates. Different brands also tend to make more efficient cars than others. Click on different brands to see how their class of cars and emissions differ.
+
+```{r}
+checkboxGroupInput(inputId = "make_input", 
+                   label = h3("Make"),
+                   choices = unique(df$make), 
+                   inline = TRUE,
+                   selected = 'MAZDA')
+
+```
+
+Main Tab 1
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Density Plot by Class
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(make %in% input$make_input) %>% 
+    filter(class %in% c("SUBCOMPACT", "COMPACT", "MID-SIZE","FULL-SIZE", "SUV")) %>%
+    ggplot(aes(x=emissions_per_mile, color=class))+
+    geom_density()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+###  Density Plot by Brand
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(make %in% input$make_input) %>% 
+    filter(class %in% c("SUBCOMPACT", "COMPACT", "MID-SIZE","FULL-SIZE", "SUV")) %>%
+    ggplot(aes(x=emissions_per_mile, color=make))+
+    geom_density()
+  ggplotly(p1)
+})
+```

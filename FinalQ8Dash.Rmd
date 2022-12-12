@@ -1,0 +1,81 @@
+---
+title: "COVID - Date Range Input"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    source_code: embed
+    social: menu
+
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(DT)
+library(lubridate)
+df <- read_csv('us-states.csv')
+
+
+df <- drop_na(df, cases)
+df <- drop_na(df, deaths)
+
+
+
+
+```
+
+{.sidebar}
+=======================================================================
+
+The COVID-19 pandemic has had various periods of calm and surge, in terms of cases and deaths. Select a date range and notice the similarity in patterns between the graphs of new cases and new deaths for particular periods in CT, MA, and RI.  
+
+```{r}
+dateRangeInput(inputId = "date_input", 
+               label = h2("Date Range"), 
+               start = min(df$date), 
+               end = max(df$date),
+               min = min(df$date), 
+               max = max(df$date))
+```
+
+Main Tab 1
+=======================================================================
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### Cases by Date
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(date > input$date_input[1], date < input$date_input[2]) %>% 
+    
+    filter(state %in% c("Connecticut", "Massachusetts", "Rhode Island")) %>% 
+    ggplot(aes(x=date, y=cases))+
+    geom_point ()
+  ggplotly(p1)
+})
+```
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### Deaths by Date
+
+```{r}
+renderPlotly({
+  p1 <- df %>% 
+    filter(date > input$date_input[1], date < input$date_input[2]) %>% 
+    
+    filter(state %in% c("Connecticut", "Massachusetts", "Rhode Island")) %>% 
+    ggplot(aes(x=date, y=deaths))+
+    geom_point()
+  ggplotly(p1)
+})
+```
